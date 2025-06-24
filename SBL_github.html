@@ -10,7 +10,6 @@
             margin: 0;
             padding: 10px;
             font-family: Arial, sans-serif;
-            color: white;
         }
         
         ul {
@@ -49,6 +48,23 @@
             color: red;
             font-weight: bold;
         }
+		
+	#boss-container, #mini-boss-container {
+		width: 90%; 
+		margin: 10px auto;
+		padding: 10px;
+		box-sizing: border-box; 
+		/* Optional, wenn du sie direkt überlappend haben willst und später JS die Sichtbarkeit steuert */
+		position: absolute; /* Wichtig, damit sie sich überlappen */
+		top: 0;
+		left: 0;
+		right: 0;
+	}
+
+	/* Standardmäßig nur den ersten Container anzeigen, den anderen verstecken */
+	#mini-boss-container {
+		display: none; /* Initial versteckt */
+	}
     </style>
 </head>
 <body>
@@ -59,56 +75,83 @@
     <div id="mini-boss-container">
     </div>
 
-    <script>
-        // HIER DEINE GOOGLE APPS SCRIPT JSON-API URL EINTRAGEN!
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzI22Ua4YEx-i-feqaGSr8qnXUVMUZxlMXAQ07dSj5Xo5pVp_XuhU4FECJd0BLPyHrV2w/exec';
-        
-        async function loadBosses() {
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                
-                displayBosses(data.mainBosses, data.miniBosses);
-                
-            } catch (error) {
-                console.error('Error loading bosses:', error);
-                document.getElementById('boss-container').innerHTML = 
-                    '<p class="error">Failed to load boss lists</p>';
-            }
-        }
-        
-        function displayBosses(mainBosses, miniBosses) {
-            const container = document.getElementById('boss-container');
-            const miniContainer = document.getElementById('mini-boss-container');
-            
-            // Main Bosses
-            let html = '<h1>Sekiro Boss Liste</h1><ul>';
-            if (mainBosses && mainBosses.length > 0) {
-                mainBosses.forEach(boss => {
-                    const defeatedClass = boss.defeated ? 'defeated' : '';
-                    html += `<li class="${defeatedClass}">${boss.name}</li>`;
-                });
-            }
-            html += '</ul>';
-            container.innerHTML = html;
-            
-            // Mini Bosses
-            let miniHtml = '<h1>Sekiro Mini-Boss Liste</h1><ul>';
-            if (miniBosses && miniBosses.length > 0) {
-                miniBosses.forEach(boss => {
-                    const defeatedClass = boss.defeated ? 'defeated' : '';
-                    miniHtml += `<li class="${defeatedClass}">${boss.name}</li>`;
-                });
-            }
-            miniHtml += '</ul>';
-            miniContainer.innerHTML = miniHtml;
-        }
-        
-        // Initial load
-        loadBosses();
-        
-        // Auto-refresh every 30 seconds
-        setInterval(loadBosses, 30000);
-    </script>
+	<script>
+		const API_URL = 'https://script.google.com/macros/s/AKfycbzI22Ua4YEx-i-feqaGSr8qnXUVMUZxlMXAQ07dSj5Xo5pVp_XuhU4FECJd0BLPyHrV2w/exec';
+		
+		let currentView = 'mainBosses'; // Startet mit den Haupt-Bossen
+		const displayDuration = 10000; // 10 Sekunden Anzeige für jede Liste (anpassbar)
+		const dataRefreshInterval = 30000; // 30 Sekunden für Daten-Refresh (beibehalten)
+
+		async function loadBosses() {
+			try {
+				const response = await fetch(API_URL);
+				const data = await response.json();
+				
+				// Speichere die Daten global oder übergebe sie an displayBosses
+				displayBosses(data.mainBosses, data.miniBosses);
+				
+			} catch (error) {
+				console.error('Error loading bosses:', error);
+				document.getElementById('boss-container').innerHTML = 
+					'<p class="error">Failed to load boss lists</p>';
+				document.getElementById('mini-boss-container').innerHTML = ''; // Leere den anderen bei Fehler
+			}
+		}
+		
+		function displayBosses(mainBosses, miniBosses) {
+			const mainContainer = document.getElementById('boss-container');
+			const miniContainer = document.getElementById('mini-boss-container');
+			
+			// Main Bosses rendern
+			let mainHtml = '<h1>Sekiro Boss Liste</h1><ul>';
+			if (mainBosses && mainBosses.length > 0) {
+				mainBosses.forEach(boss => {
+					const defeatedClass = boss.defeated ? 'defeated' : '';
+					mainHtml += `<li class="${defeatedClass}">${boss.name}</li>`;
+				});
+			}
+			mainHtml += '</ul>';
+			mainContainer.innerHTML = mainHtml;
+			
+			// Mini Bosses rendern
+			let miniHtml = '<h1>Sekiro Mini-Boss Liste</h1><ul>';
+			if (miniBosses && miniBosses.length > 0) {
+				miniBosses.forEach(boss => {
+					const defeatedClass = boss.defeated ? 'defeated' : '';
+					miniHtml += `<li class="${defeatedClass}">${boss.name}</li>`;
+				});
+			}
+			miniHtml += '</ul>';
+			miniContainer.innerHTML = miniHtml;
+
+			// Sicherstellen, dass die anfängliche Ansicht korrekt ist
+			rotateViews(); // Initialaufruf nach dem Rendern
+		}
+
+		function rotateViews() {
+			const mainContainer = document.getElementById('boss-container');
+			const miniContainer = document.getElementById('mini-boss-container');
+
+			if (currentView === 'mainBosses') {
+				mainContainer.style.display = 'block';
+				miniContainer.style.display = 'none';
+				currentView = 'miniBosses'; // Für den nächsten Durchlauf umschalten
+			} else {
+				mainContainer.style.display = 'none';
+				miniContainer.style.display = 'block';
+				currentView = 'mainBosses'; // Für den nächsten Durchlauf umschalten
+			}
+		}
+		
+		// Initial load
+		loadBosses();
+		
+		// Auto-refresh der Daten alle 30 Sekunden
+		setInterval(loadBosses, dataRefreshInterval);
+
+		// Rotation der Listenansicht alle 10 Sekunden
+		setInterval(rotateViews, displayDuration);
+
+	</script>
 </body>
 </html>
