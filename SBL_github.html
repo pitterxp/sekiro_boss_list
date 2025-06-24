@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boss Overlay</title>
+    <style>
+        html, body {
+            background: transparent;
+            margin: 0;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        li {
+            position: relative;
+            padding-left: 30px;
+            margin: 5px 0;
+        }
+        
+        li::before {
+            position: absolute;
+            left: 0;
+            content: "❤️";
+        }
+        
+        li.defeated {
+            text-decoration: line-through;
+            color: darkred;
+        }
+        
+        li.defeated::before {
+            content: "☠️";
+        }
+        
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="boss-container">
+        <p class="loading">Loading Sekiro boss lists...</p>
+    </div>
+    
+    <div id="mini-boss-container">
+    </div>
+
+    <script>
+        // HIER DEINE GOOGLE APPS SCRIPT JSON-API URL EINTRAGEN!
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzI22Ua4YEx-i-feqaGSr8qnXUVMUZxlMXAQ07dSj5Xo5pVp_XuhU4FECJd0BLPyHrV2w/exec';
+        
+        async function loadBosses() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                displayBosses(data.mainBosses, data.miniBosses);
+                
+            } catch (error) {
+                console.error('Error loading bosses:', error);
+                document.getElementById('boss-container').innerHTML = 
+                    '<p class="error">Failed to load boss lists</p>';
+            }
+        }
+        
+        function displayBosses(mainBosses, miniBosses) {
+            const container = document.getElementById('boss-container');
+            const miniContainer = document.getElementById('mini-boss-container');
+            
+            // Main Bosses
+            let html = '<h1>Sekiro Boss Liste</h1><ul>';
+            if (mainBosses && mainBosses.length > 0) {
+                mainBosses.forEach(boss => {
+                    const defeatedClass = boss.defeated ? 'defeated' : '';
+                    html += `<li class="${defeatedClass}">${boss.name}</li>`;
+                });
+            }
+            html += '</ul>';
+            container.innerHTML = html;
+            
+            // Mini Bosses
+            let miniHtml = '<h1>Sekiro Mini-Boss Liste</h1><ul>';
+            if (miniBosses && miniBosses.length > 0) {
+                miniBosses.forEach(boss => {
+                    const defeatedClass = boss.defeated ? 'defeated' : '';
+                    miniHtml += `<li class="${defeatedClass}">${boss.name}</li>`;
+                });
+            }
+            miniHtml += '</ul>';
+            miniContainer.innerHTML = miniHtml;
+        }
+        
+        // Initial load
+        loadBosses();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadBosses, 30000);
+    </script>
+</body>
+</html>
